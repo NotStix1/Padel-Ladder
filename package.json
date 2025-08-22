@@ -1,0 +1,16 @@
+{
+  "name": "padel-ladder",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "start": "node backend/src/index.js",
+    "migrate": "node backend/src/db.js --migrate",
+    "build:frontend": "npm -w frontend run build"
+  }
+}
+
+

@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+/* App shells */
+.app-container { @apply mx-auto max-w-screen-sm px-4; }
+.card { @apply bg-slate-900/70 border border-slate-800 rounded-xl p-4; }
+.btn { @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-semibold bg-slate-800 border border-slate-700 hover:bg-slate-700 transition; }
+.btn-primary { @apply bg-brand border-none hover:bg-brand-dark text-white; }
+.input { @apply w-full px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white; }
+.label { @apply block text-sm text-slate-400 mb-1; }
+
+

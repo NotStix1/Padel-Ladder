@@ -1,0 +1,75 @@
+Build a mobile-first Padel Ladder web app.
+Goal: let players join courts, challenge each other, record results, and climb ladders. Each court has its own public challenges feed and ladder.
+
+Users & Roles
+- Player (default)
+- Court Owner/Admin (owns one or more courts; manages ladders, rules, and moderation)
+
+Auth
+- Email/password + social (Google/Apple)
+- Profile: name, avatar, preferred hand/level, home court(s)
+
+Courts
+- Any user can register a padel court → becomes Owner
+- Court profile: name, location, hours, rules, contact, court images
+- Court settings: enable/disable ladder(s), match formats, scoring, max challenge distance, inactivity rules, season dates
+
+Ladders
+- Per court (support multiple ladders per court: Open/Mixed/Women/Men)
+- Ranking model: configurable (Elo/Glicko or classic swap-on-win)
+- Placement: new players start at bottom or provisional ranking
+- Decay/inactivity options (auto drop after X days)
+
+Challenges (core flow)
+1. Player selects court + ladder, taps “Challenge”
+2. Can challenge up to N spots above (configurable)
+3. Opponent accepts/declines within T hours (auto-cancel on timeout)
+4. Match scheduled: date/time, optional court booking link
+5. After match, both players upload final score (set-by-set); either can submit, both must confirm; tie-breaks supported
+6. Disputes: Owner/Admin can resolve/override
+
+Results & Visibility
+- Each court has a Challenges page/feed: upcoming, in-progress, completed matches
+- Each completed match shows players, score, ranking change
+- Ladder page shows positions, streaks, recent activity, last played date
+
+Player Experience
+- Join/leave ladder, view challenge eligibility, recent opponents
+- Quick rematch, match history, win/loss, set stats
+- Optional skill estimate and suggested opponents
+
+Notifications
+- Push/email: challenge received, accepted, reminders, result needed, ranking change
+- Court broadcast (owners): rule updates, season resets
+
+Admin/Owner Tools
+- Edit court profile & ladder rules
+- Approve/ban players from a court
+- Season management: start/end, reset or carry-over ratings, publish champions
+- Analytics: participation, matches/week, top movers
+
+Fair Play / Anti-abuse
+- Cooldowns, no-repeat limits, forfeit rules, auto-expiry on unplayed matches
+
+Search & Discovery
+- Find courts by location
+- Join ladders with one tap; request access if court is private
+
+Tech & UX
+- Mobile-first PWA (installable), offline for viewing ladders & scheduled matches
+- Fast list views, skeleton loaders, infinite scroll
+- Accessibility AA, dark mode
+
+Data (high level)
+- Users, Courts, Ladders, Memberships, Challenges, Matches, Ratings, Seasons, Notifications, AuditLog
+
+APIs (high level)
+- `/auth/*`, `/courts/*`, `/ladders/*`, `/ladders/{id}/members`, `/challenges/*`, `/matches/*`, `/ratings/*`, `/seasons/*`, `/admin/*`
+
+Acceptance Criteria
+- A player can register/login, join a court’s ladder, challenge someone above, record a score, and see the ladder update immediately.
+- Court’s Challenges page shows that match before and after it’s played.
+- Owners can configure rules and resolve disputes.
+
+Nice-to-haves
+- Court booking integration link, QR share for court ladder, CSV export of ladder.
