@@ -34,8 +34,8 @@ router.post('/register', (req, res) => {
   const displayName = `${String(firstName || '').trim()} ${String(lastName || '').trim()}`.trim();
   const phone = normalizeE164(cellphone);
   db.prepare(
-    'INSERT INTO users (id, email, password_hash, display_name, created_at, cellphone) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(userId, email, passwordHash, displayName, createdAt, phone);
+    'INSERT INTO users (id, email, password_hash, display_name, created_at, cellphone, last_online_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(userId, email, passwordHash, displayName, createdAt, phone, createdAt);
 
   const token = jwt.sign({ userId, email }, jwtSecret, { expiresIn: '7d' });
   res.json({ token, user: { id: userId, email, displayName } });
@@ -56,6 +56,7 @@ router.post('/login', (req, res) => {
   if (!valid) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
+  db.prepare('UPDATE users SET last_online_at = ? WHERE id = ?').run(new Date().toISOString(), user.id);
   const token = jwt.sign({ userId: user.id, email: user.email }, jwtSecret, { expiresIn: '7d' });
   res.json({ token, user: { id: user.id, email: user.email, displayName: user.display_name } });
 });

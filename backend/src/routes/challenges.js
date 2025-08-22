@@ -41,16 +41,28 @@ router.post('/', requireAuth, (req, res) => {
 // List challenges for a ladder
 router.get('/', (req, res) => {
   const db = req.db;
-  const { ladderId } = req.query;
+  const { ladderId, status, upcoming } = req.query;
   if (!ladderId) return res.status(400).json({ error: 'ladderId is required' });
+  const filters = ['ch.ladder_id = ?'];
+  const params = [ladderId];
+  if (status) {
+    filters.push('ch.status = ?');
+    params.push(status);
+  }
+  if (upcoming === '1' || upcoming === 'true') {
+    filters.push("ch.scheduled_at IS NOT NULL");
+    filters.push("datetime(ch.scheduled_at) > datetime('now')");
+    filters.push("ch.status IN ('PENDING','ACCEPTED')");
+  }
+  const order = (upcoming === '1' || upcoming === 'true') ? 'ch.scheduled_at ASC' : 'ch.created_at DESC';
   const rows = db.prepare(`
     SELECT ch.*, cu.display_name as challenger_name, tu.display_name as challenged_name
     FROM challenges ch
     JOIN users cu ON cu.id = ch.challenger_user_id
     JOIN users tu ON tu.id = ch.challenged_user_id
-    WHERE ch.ladder_id = ?
-    ORDER BY ch.created_at DESC
-  `).all(ladderId);
+    WHERE ${filters.join(' AND ')}
+    ORDER BY ${order}
+  `).all(...params);
   res.json(rows);
 });
 
@@ -113,6 +125,41 @@ router.post('/:challengeId/decline', requireAuth, (req, res) => {
   if (ch.status !== 'PENDING') return res.status(400).json({ error: 'Challenge not pending' });
   db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('DECLINED', ch.id);
   res.json({ ok: true });
+});
+
+// Challenge chat messages
+router.get('/:challengeId/messages', requireAuth, (req, res) => {
+  const db = req.db;
+  const challengeId = req.params.challengeId;
+  const ch = db.prepare('SELECT * FROM challenges WHERE id = ?').get(challengeId);
+  if (!ch) return res.status(404).json({ error: 'Challenge not found' });
+  const member = db.prepare('SELECT 1 FROM ladder_members WHERE ladder_id = ? AND user_id = ?').get(ch.ladder_id, req.user.userId);
+  if (!member) return res.status(403).json({ error: 'Forbidden' });
+  const isParticipant = ch.challenger_user_id === req.user.userId || ch.challenged_user_id === req.user.userId;
+  const rows = db.prepare(`
+    SELECT m.id, m.user_id, u.display_name, m.message, m.is_private, m.created_at
+    FROM challenge_messages m
+    JOIN users u ON u.id = m.user_id
+    WHERE m.challenge_id = ? AND (m.is_private = 0 OR ? = 1)
+    ORDER BY m.created_at ASC
+  `).all(challengeId, isParticipant ? 1 : 0);
+  res.json(rows);
+});
+
+router.post('/:challengeId/messages', requireAuth, (req, res) => {
+  const db = req.db;
+  const challengeId = req.params.challengeId;
+  const { message, isPrivate } = req.body;
+  if (!message) return res.status(400).json({ error: 'message is required' });
+  const ch = db.prepare('SELECT * FROM challenges WHERE id = ?').get(challengeId);
+  if (!ch) return res.status(404).json({ error: 'Challenge not found' });
+  const member = db.prepare('SELECT 1 FROM ladder_members WHERE ladder_id = ? AND user_id = ?').get(ch.ladder_id, req.user.userId);
+  if (!member) return res.status(403).json({ error: 'Forbidden' });
+  const id = uuidv4();
+  const createdAt = new Date().toISOString();
+  db.prepare('INSERT INTO challenge_messages (id, challenge_id, user_id, message, is_private, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(id, challengeId, req.user.userId, message, isPrivate ? 1 : 0, createdAt);
+  res.status(201).json({ id, challenge_id: challengeId, user_id: req.user.userId, message, is_private: isPrivate ? 1 : 0, created_at: createdAt });
 });
 
 export default router;

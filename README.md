@@ -50,13 +50,19 @@ Configure the frontend to point to a different API by setting `VITE_API_BASE_URL
 - `POST /auth/login` { email, password }
 - `GET /courts` (public)
 - `POST /courts` (auth) create a court; caller becomes owner
+- `GET /courts/:courtId/messages` (auth) list discussion messages for a court
+- `POST /courts/:courtId/messages` (auth) post a message { message }
 - `GET /ladders?courtId=...` (public)
 - `POST /ladders` (auth; only court owner) create a ladder
 - `POST /ladders/:ladderId/join` (auth) join ladder
 - `GET /ladders/:ladderId/standings` (public)
 - `POST /challenges` (auth) issue challenge
-- `GET /challenges?ladderId=...` (public)
+- `GET /challenges?ladderId=...&status=PENDING&upcoming=1` (public) list challenges with optional status/upcoming filters
 - `POST /challenges/:challengeId/report` (auth) report winner; swaps ranks if lower beats higher
+- `GET /challenges/:challengeId/messages` (auth) view chat messages for a challenge; participants can see private messages
+- `POST /challenges/:challengeId/messages` (auth) post a chat message { message, isPrivate }
+- `GET /profile/:userId/history` (public) list a player's completed matches
+- `GET /profile/online` (public) list users active in the last 5 minutes
 
 ## server.jar launcher (optional)
 
