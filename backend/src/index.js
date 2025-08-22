@@ -38,6 +38,13 @@ app.use((req, _res, next) => {
     try {
       const decoded = jwt.verify(token, jwtSecret);
       req.user = decoded;
+      try {
+        req.db
+          .prepare('UPDATE users SET last_online_at = ? WHERE id = ?')
+          .run(new Date().toISOString(), decoded.userId);
+      } catch (_) {
+        // ignore
+      }
     } catch (_) {
       // ignore invalid token
     }

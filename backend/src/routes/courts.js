@@ -45,6 +45,50 @@ router.get('/:courtId/challenges', (req, res) => {
   res.json(rows);
 });
 
+// Court discussion messages
+router.get('/:courtId/messages', requireAuth, (req, res) => {
+  const db = req.db;
+  const courtId = req.params.courtId;
+  const member = db
+    .prepare(`
+      SELECT 1 FROM ladders l
+      JOIN ladder_members lm ON lm.ladder_id = l.id
+      WHERE l.court_id = ? AND lm.user_id = ?
+    `)
+    .get(courtId, req.user.userId);
+  if (!member) return res.status(403).json({ error: 'Forbidden' });
+  const rows = db
+    .prepare(`
+      SELECT m.id, m.user_id, u.display_name, m.message, m.created_at
+      FROM court_messages m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.court_id = ?
+      ORDER BY m.created_at ASC
+    `)
+    .all(courtId);
+  res.json(rows);
+});
+
+router.post('/:courtId/messages', requireAuth, (req, res) => {
+  const db = req.db;
+  const courtId = req.params.courtId;
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: 'message is required' });
+  const member = db
+    .prepare(`
+      SELECT 1 FROM ladders l
+      JOIN ladder_members lm ON lm.ladder_id = l.id
+      WHERE l.court_id = ? AND lm.user_id = ?
+    `)
+    .get(courtId, req.user.userId);
+  if (!member) return res.status(403).json({ error: 'Forbidden' });
+  const id = uuidv4();
+  const createdAt = new Date().toISOString();
+  db.prepare('INSERT INTO court_messages (id, court_id, user_id, message, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(id, courtId, req.user.userId, message, createdAt);
+  res.status(201).json({ id, court_id: courtId, user_id: req.user.userId, message, created_at: createdAt });
+});
+
 export default router;
 
 

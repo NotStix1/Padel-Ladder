@@ -90,7 +90,11 @@ async function migrate() {
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       display_name TEXT NOT NULL,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      cellphone TEXT,
+      bio TEXT,
+      avatar_url TEXT,
+      last_online_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS courts (
@@ -181,6 +185,27 @@ async function migrate() {
       FOREIGN KEY(ladder_id) REFERENCES ladders(id)
     );
 
+    CREATE TABLE IF NOT EXISTS challenge_messages (
+      id TEXT PRIMARY KEY,
+      challenge_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_private INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(challenge_id) REFERENCES challenges(id),
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS court_messages (
+      id TEXT PRIMARY KEY,
+      court_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(court_id) REFERENCES courts(id),
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+
     CREATE TABLE IF NOT EXISTS ratings (
       ladder_id TEXT NOT NULL,
       user_id TEXT NOT NULL,
@@ -208,6 +233,7 @@ async function migrate() {
     const hasCell = cols.some(c => c.name === 'cellphone');
     const hasBio = cols.some(c => c.name === 'bio');
     const hasAvatar = cols.some(c => c.name === 'avatar_url');
+    const hasOnline = cols.some(c => c.name === 'last_online_at');
     if (!hasCell) {
       dbw.exec('ALTER TABLE users ADD COLUMN cellphone TEXT');
     }
@@ -216,6 +242,9 @@ async function migrate() {
     }
     if (!hasAvatar) {
       dbw.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT');
+    }
+    if (!hasOnline) {
+      dbw.exec('ALTER TABLE users ADD COLUMN last_online_at TEXT');
     }
   } catch (_) {
     // ignore

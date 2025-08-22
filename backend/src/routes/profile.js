@@ -21,7 +21,9 @@ const upload = multer({ storage });
 // Get my profile
 router.get('/me', requireAuth, (req, res) => {
   const db = req.db;
-  const me = db.prepare('SELECT id, email, display_name, cellphone, bio, avatar_url FROM users WHERE id = ?').get(req.user.userId);
+  const me = db
+    .prepare('SELECT id, email, display_name, cellphone, bio, avatar_url, last_online_at FROM users WHERE id = ?')
+    .get(req.user.userId);
   res.json(me || {});
 });
 
@@ -43,6 +45,35 @@ router.post('/me/avatar', requireAuth, upload.single('avatar'), (req, res) => {
   const rel = `/uploads/${path.basename(req.file.path)}`;
   req.db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(rel, req.user.userId);
   res.json({ url: rel });
+});
+
+// List currently online users (seen within last 5 minutes)
+router.get('/online', (_req, res) => {
+  const db = req.db;
+  const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const rows = db
+    .prepare(
+      'SELECT id, display_name, avatar_url, last_online_at FROM users WHERE last_online_at >= ? ORDER BY display_name'
+    )
+    .all(since);
+  res.json(rows);
+});
+
+// Public challenge history for a user
+router.get('/:userId/history', (req, res) => {
+  const db = req.db;
+  const { userId } = req.params;
+  const rows = db
+    .prepare(
+      `SELECT m.*, u1.display_name AS p1_name, u2.display_name AS p2_name
+       FROM matches m
+       JOIN users u1 ON u1.id = m.p1_user_id
+       JOIN users u2 ON u2.id = m.p2_user_id
+       WHERE m.p1_user_id = ? OR m.p2_user_id = ?
+       ORDER BY m.created_at DESC`
+    )
+    .all(userId, userId);
+  res.json(rows);
 });
 
 export default router;
